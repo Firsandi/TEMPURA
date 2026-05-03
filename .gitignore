@@ -1,0 +1,38 @@
+# Environment Files
+.env
+*.env
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Go
+backend/backend
+backend/bin/
+backend/scratch/migrate_history.go
+backend/scratch/cleanup_data.go
+
+# Flutter
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.dart_tool/
+mobile/build/
+mobile/.packages
+mobile/.pub-cache/
+mobile/.pub/
+mobile/ios/Flutter/Generated.xcconfig
+mobile/ios/Flutter/flutter_export_environment.sh
+mobile/ios/Flutter/App.framework
+mobile/ios/Flutter/Flutter.framework
+mobile/ios/Flutter/Flutter.podspec
+
+# Other
+node_modules/
+dist/
+build/

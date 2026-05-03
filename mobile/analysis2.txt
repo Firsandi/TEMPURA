@@ -1,0 +1,16 @@
+Analyzing mobile...                                             
+
+  error • The argument type 'User' can't be assigned to the parameter type 'UserModel'.  • lib/features/auth/presentation/pages/login_page.dart:45:53 • argument_type_not_assignable
+warning • Unused import: '../../../../core/constants/api_constants.dart' • lib/features/dashboard/data/datasources/dashboard_remote_data_source.dart:2:8 • unused_import
+warning • The value of the field '_isLoading' isn't used • lib/features/dashboard/presentation/pages/dashboard_page.dart:24:8 • unused_field
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/dashboard/presentation/pages/dashboard_page.dart:112:51 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/dashboard/presentation/pages/dashboard_page.dart:114:70 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/dashboard/presentation/widgets/device_toggle.dart:26:48 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/dashboard/presentation/widgets/device_toggle.dart:34:52 • deprecated_member_use
+   info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/features/dashboard/presentation/widgets/device_toggle.dart:57:13 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/dashboard/presentation/widgets/device_toggle.dart:58:52 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/dashboard/presentation/widgets/monitoring_chart.dart:46:45 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/dashboard/presentation/widgets/monitoring_chart.dart:61:42 • deprecated_member_use
+warning • Unused import: 'core/theme/app_theme.dart' • lib/main.dart:3:8 • unused_import
+
+12 issues found. (ran in 0.8s)

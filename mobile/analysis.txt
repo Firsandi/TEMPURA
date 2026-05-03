@@ -1,0 +1,20 @@
+Analyzing mobile...                                             
+
+  error • Target of URI doesn't exist: '../../dashboard/presentation/pages/dashboard_page.dart' • lib/features/auth/presentation/pages/login_page.dart:4:8 • uri_does_not_exist
+  error • The method 'DashboardPage' isn't defined for the type '_LoginPageState' • lib/features/auth/presentation/pages/login_page.dart:45:33 • undefined_method
+warning • Unused import: '../../../../core/constants/api_constants.dart' • lib/features/dashboard/data/datasources/dashboard_remote_data_source.dart:2:8 • unused_import
+  error • Target of URI doesn't exist: '../../auth/data/models/user_model.dart' • lib/features/dashboard/presentation/pages/dashboard_page.dart:5:8 • uri_does_not_exist
+  error • Undefined class 'UserModel' • lib/features/dashboard/presentation/pages/dashboard_page.dart:13:9 • undefined_class
+warning • The value of the field '_isLoading' isn't used • lib/features/dashboard/presentation/pages/dashboard_page.dart:24:8 • unused_field
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/dashboard/presentation/pages/dashboard_page.dart:112:51 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/dashboard/presentation/pages/dashboard_page.dart:114:70 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/dashboard/presentation/widgets/device_toggle.dart:26:48 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/dashboard/presentation/widgets/device_toggle.dart:34:52 • deprecated_member_use
+  error • The getter 'white05' isn't defined for the type 'Colors' • lib/features/dashboard/presentation/widgets/device_toggle.dart:34:78 • undefined_getter
+   info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/features/dashboard/presentation/widgets/device_toggle.dart:57:13 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/dashboard/presentation/widgets/device_toggle.dart:58:52 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/dashboard/presentation/widgets/monitoring_chart.dart:46:45 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/dashboard/presentation/widgets/monitoring_chart.dart:61:42 • deprecated_member_use
+warning • Unused import: 'core/theme/app_theme.dart' • lib/main.dart:3:8 • unused_import
+
+16 issues found. (ran in 0.8s)
