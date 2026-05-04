@@ -46,6 +46,7 @@ func ConnectDatabase() {
 		&models.DeviceStatus{},
 		&models.DeviceControlLog{},
 		&models.ProductionHistory{},
+		&models.SystemSetting{},
 	)
 	if err != nil {
 		log.Printf("Gagal migrasi database: %v", err)

@@ -1,8 +1,12 @@
 package handlers
 
 import (
+	"crypto/rand"
 	"fmt"
+	"math/big"
 	"net/http"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"tempura-backend/config"
 	"tempura-backend/models"
@@ -60,60 +64,123 @@ func RequestPasswordReset(c *gin.Context) {
 		return
 	}
 
+	// Generate 6-digit OTP token
+	token, _ := generateOTP(6)
+	expiresAt := time.Now().Add(1 * time.Hour) // Token valid for 1 hour
+
 	// Create request
 	request := models.PasswordResetRequest{
-		Username: user.Username,
-		Email:    input.Email,
-		Status:   "pending",
+		Username:  user.Username,
+		Email:     input.Email,
+		Token:     token,
+		ExpiresAt: expiresAt,
+		IsUsed:    false,
 	}
 
 	if err := config.DB.Create(&request).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengirim permintaan"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membuat permintaan reset"})
 		return
 	}
 
+	// Simulation: Print to console (In production, send via email)
+	fmt.Printf("SIMULASI EMAIL: Token reset password untuk %s: %s (Berlaku s/d %v)\n", 
+		user.Email, token, expiresAt.Format("15:04:05"))
+
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "success",
-		"message": "Permintaan reset password telah dikirim ke admin.",
+		"message": "Kode verifikasi telah dikirim ke email Anda.",
 	})
 }
 
-func GetResetRequests(c *gin.Context) {
-	var requests []models.PasswordResetRequest
-	config.DB.Order("created_at desc").Find(&requests)
-	c.JSON(http.StatusOK, gin.H{"status": "success", "data": requests})
+func ResetPassword(c *gin.Context) {
+	var input struct {
+		Email       string `json:"email" binding:"required"`
+		Token       string `json:"token" binding:"required"`
+		NewPassword string `json:"new_password" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Format input tidak valid"})
+		return
+	}
+
+	var request models.PasswordResetRequest
+	// Find the most recent unused token for this email
+	err := config.DB.Where("email = ? AND token = ? AND is_used = ?", input.Email, input.Token, false).
+		Order("created_at desc").First(&request).Error
+
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Kode verifikasi salah atau sudah digunakan"})
+		return
+	}
+
+	// Check expiry
+	if time.Now().After(request.ExpiresAt) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Kode verifikasi telah kedaluwarsa"})
+		return
+	}
+
+	// Update User Password
+	if err := config.DB.Model(&models.User{}).Where("username = ?", request.Username).
+		Update("password", input.NewPassword).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memperbarui kata sandi"})
+		return
+	}
+
+	// Mark token as used
+	config.DB.Model(&request).Update("is_used", true)
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Kata sandi berhasil diperbarui. Silakan login kembali.",
+	})
 }
 
-func HandleResetRequest(c *gin.Context) {
-	id := c.Param("id")
-	var input struct {
-		Action string `json:"action"` // approve, reject
+// Helper function to generate OTP
+func generateOTP(n int) (string, error) {
+	const digits = "0123456789"
+	ret := make([]byte, n)
+	for i := 0; i < n; i++ {
+		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(digits))))
+		if err != nil {
+			return "", err
+		}
+		ret[i] = digits[num.Int64()]
 	}
+	return string(ret), nil
+}
+
+func ChangePassword(c *gin.Context) {
+	var input struct {
+		UserID      uint   `json:"user_id" binding:"required"`
+		OldPassword string `json:"old_password" binding:"required"`
+		NewPassword string `json:"new_password" binding:"required"`
+	}
+
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	var request models.PasswordResetRequest
-	if err := config.DB.First(&request, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Permintaan tidak ditemukan"})
+	var user models.User
+	if err := config.DB.First(&user, input.UserID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User tidak ditemukan"})
 		return
 	}
 
-	if input.Action == "approve" {
-		request.Status = "approved"
-		
-		// Reset password logic (Simulasi: set ke "tempura123")
-		newPassword := "tempura123"
-		config.DB.Model(&models.User{}).Where("username = ?", request.Username).Update("password", newPassword)
-		
-		// Simulasi kirim email
-		fmt.Printf("SIMULASI EMAIL: Password baru untuk %s dikirim ke %s: %s\n", request.Username, request.Email, newPassword)
-		
-	} else {
-		request.Status = "rejected"
+	if user.Password != input.OldPassword {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Kata sandi lama salah"})
+		return
 	}
 
-	config.DB.Save(&request)
-	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Permintaan berhasil diproses"})
+	if err := config.DB.Model(&user).Update("password", input.NewPassword).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memperbarui kata sandi"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Kata sandi berhasil diubah",
+	})
 }
+

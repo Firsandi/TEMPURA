@@ -1,42 +1,67 @@
-import 'package:dio/dio.dart';
-import 'package:tempura/core/constants/api_constants.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_model.dart';
 
 abstract class AuthRemoteDataSource {
-  Future<UserModel> login(String username, String password);
+  Future<UserModel> login(String email, String password);
+  Future<String> forgotPassword(String email);
+  Future<String> resetPassword(String email, String token, String newPassword);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
-  final Dio dio;
+  final SupabaseClient supabase = Supabase.instance.client;
 
-  AuthRemoteDataSourceImpl(this.dio) {
-    dio.options.baseUrl = ApiConstants.baseUrl;
+  @override
+  Future<UserModel> login(String email, String password) async {
+    try {
+      final response = await supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+
+      if (response.user != null) {
+        return UserModel(
+          id: response.user!.id,
+          username: response.user!.email?.split('@')[0] ?? 'user',
+          fullName: response.user!.userMetadata?['full_name'] ?? 'User',
+          role: response.user!.userMetadata?['role']?.toString() ?? '2',
+        );
+      } else {
+        throw 'Gagal login: User tidak ditemukan';
+      }
+    } catch (e) {
+      throw e.toString().replaceAll('AuthException: ', '');
+    }
   }
 
   @override
-  Future<UserModel> login(String username, String password) async {
+  Future<String> forgotPassword(String email) async {
     try {
-      final response = await dio.post(
-        ApiConstants.loginEndpoint,
-        data: {
-          'username': username,
-          'password': password,
-        },
+      await supabase.auth.resetPasswordForEmail(email);
+      return 'Email pemulihan kata sandi telah dikirim.';
+    } catch (e) {
+      throw e.toString().replaceAll('AuthException: ', '');
+    }
+  }
+
+  @override
+  Future<String> resetPassword(
+      String email, String token, String newPassword) async {
+    try {
+      // Supabase uses verifyOTP for email reset tokens
+      await supabase.auth.verifyOTP(
+        email: email,
+        token: token,
+        type: OtpType.recovery,
       );
 
-      if (response.statusCode == 200) {
-        final data = response.data['data'];
-        return UserModel.fromJson(data);
-      } else {
-        throw response.data['message'] ?? 'Gagal login ke server';
-      }
-    } on DioException catch (e) {
-      if (e.response?.data != null && e.response?.data['message'] != null) {
-        throw e.response?.data['message'];
-      }
-      throw 'Terjadi kesalahan jaringan: ${e.message}';
+      // After verification, update the password
+      await supabase.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+
+      return 'Kata sandi berhasil diperbarui.';
     } catch (e) {
-      throw 'Kesalahan tidak terduga: $e';
+      throw e.toString().replaceAll('AuthException: ', '');
     }
   }
 }

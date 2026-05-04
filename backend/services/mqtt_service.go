@@ -12,9 +12,12 @@ import (
 )
 
 type SensorPayload struct {
-	Temp float64 `json:"temp"`
-	Hum  float64 `json:"hum"`
-	Soil int     `json:"soil"`
+	Temp      float64 `json:"temp"`
+	Hum       float64 `json:"hum"`
+	Soil      int     `json:"soil"`
+	RelayFan  bool    `json:"relay_fan"`
+	RelayPump bool    `json:"relay_pump"`
+	Health    string  `json:"health"`
 }
 
 func StartMQTTSubscription() {
@@ -57,6 +60,9 @@ func handleSensorData(client mqtt.Client, msg mqtt.Message) {
 		Suhu:         payload.Temp,
 		Kelembaban:   payload.Hum,
 		SoilMoisture: payload.Soil,
+		RelayFan:     payload.RelayFan,
+		RelayPump:    payload.RelayPump,
+		Health:       payload.Health,
 	}
 
 	dbResult := config.DB.Create(&sensorData)

@@ -10,13 +10,13 @@ abstract class AuthEvent extends Equatable {
 }
 
 class LoginRequested extends AuthEvent {
-  final String username;
+  final String email;
   final String password;
 
-  LoginRequested(this.username, this.password);
+  LoginRequested(this.email, this.password);
 
   @override
-  List<Object?> get props => [username, password];
+  List<Object?> get props => [email, password];
 }
 
 // States
@@ -52,7 +52,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   AuthBloc({required this.loginUseCase}) : super(AuthInitial()) {
     on<LoginRequested>((event, emit) async {
       emit(AuthLoading());
-      final result = await loginUseCase.execute(event.username, event.password);
+      final result = await loginUseCase.execute(event.email, event.password);
       result.fold(
         (failure) => emit(AuthError(failure.message)),
         (user) => emit(AuthAuthenticated(user)),

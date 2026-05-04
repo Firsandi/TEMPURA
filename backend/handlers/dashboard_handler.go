@@ -121,3 +121,61 @@ func CreateBatch(c *gin.Context) {
 		"data":    batch,
 	})
 }
+
+func ControlDevice(c *gin.Context) {
+	var input struct {
+		Device string `json:"device"` // fan, pump, etc
+		Action string `json:"action"` // on, off
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Publish to MQTT
+	topic := "tempura/device/control"
+	// Sesuai dengan format di ESP32: fan_on, fan_off, pump_on, pump_off
+	payload := input.Device + "_" + input.Action
+	
+	token := config.MQTTClient.Publish(topic, 1, false, payload)
+	token.Wait()
+
+	if token.Error() != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengirim perintah ke alat"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Perintah berhasil dikirim: " + payload,
+	})
+}
+
+func GetSettings(c *gin.Context) {
+	var settings models.SystemSetting
+	if err := config.DB.First(&settings).Error; err != nil {
+		// Create default if not exists
+		settings = models.SystemSetting{Mode: "manual", TargetTemp: 30.0, TargetMoisture: 700}
+		config.DB.Create(&settings)
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "success", "data": settings})
+}
+
+func UpdateSettings(c *gin.Context) {
+	var input models.SystemSetting
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var settings models.SystemSetting
+	config.DB.First(&settings)
+	config.DB.Model(&settings).Updates(input)
+
+	// Publish new mode to MQTT so ESP32 knows
+	topic := "tempura/system/config"
+	config.MQTTClient.Publish(topic, 1, true, input.Mode)
+
+	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Pengaturan diperbarui", "data": settings})
+}

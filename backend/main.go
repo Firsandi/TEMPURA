@@ -40,9 +40,9 @@ func main() {
 	auth := r.Group("/auth")
 	{
 		auth.POST("/login", handlers.Login)
-		auth.POST("/reset-password", handlers.RequestPasswordReset)
-		auth.GET("/reset-requests", handlers.GetResetRequests)
-		auth.POST("/reset-requests/:id", handlers.HandleResetRequest)
+		auth.POST("/forgot-password", handlers.RequestPasswordReset)
+		auth.POST("/reset-password", handlers.ResetPassword)
+		auth.POST("/change-password", handlers.ChangePassword)
 	}
 
 	batchGroup := r.Group("/batch")
@@ -59,6 +59,9 @@ func main() {
 	dashboard := r.Group("/dashboard")
 	{
 		dashboard.GET("/latest", handlers.GetDashboardData)
+		dashboard.POST("/control", handlers.ControlDevice)
+		dashboard.GET("/settings", handlers.GetSettings)
+		dashboard.PUT("/settings", handlers.UpdateSettings)
 	}
 
 	// 4. Run Server

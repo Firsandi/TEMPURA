@@ -3,6 +3,9 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../auth/domain/entities/user.dart';
 import 'monitoring_page.dart';
 import 'batch_list_page.dart';
+import '../../../home/presentation/pages/device_page.dart';
+import '../../../home/presentation/pages/profile_page.dart';
+import '../../../auth/presentation/pages/login_page.dart';
 
 class MainPage extends StatefulWidget {
   final User user;
@@ -23,8 +26,17 @@ class _MainPageState extends State<MainPage> {
     _pages = [
       MonitoringPage(user: widget.user),
       const BatchListPage(),
-      const Scaffold(body: Center(child: Text("PERANGKAT", style: TextStyle(color: Colors.white)))),
-      const Scaffold(body: Center(child: Text("PENGATURAN", style: TextStyle(color: Colors.white)))),
+      const DevicePage(),
+      ProfilePage(
+        user: widget.user,
+        onLogout: () {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+            (route) => false,
+          );
+        },
+      ),
     ];
   }
 
@@ -48,7 +60,7 @@ class _MainPageState extends State<MainPage> {
           BottomNavigationBarItem(icon: Icon(Icons.grid_view), label: "MONITORING"),
           BottomNavigationBarItem(icon: Icon(Icons.inventory_2_outlined), label: "BATCH"),
           BottomNavigationBarItem(icon: Icon(Icons.sensors), label: "PERANGKAT"),
-          BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), label: "PENGATURAN"),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: "PROFIL"),
         ],
       ),
     );

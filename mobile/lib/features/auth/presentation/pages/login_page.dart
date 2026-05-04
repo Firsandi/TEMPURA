@@ -1,10 +1,9 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/constants/api_constants.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../dashboard/presentation/pages/main_page.dart';
 import '../bloc/auth_bloc.dart';
+import 'forgot_password_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -25,81 +24,6 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  void _showForgotPasswordDialog() {
-    final emailController = TextEditingController();
-    bool isSubmitting = false;
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: AppTheme.cardGrey,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text("Lupa Kata Sandi", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                "Masukkan email terdaftar Anda untuk mengirim permintaan reset ke admin.",
-                style: TextStyle(color: Colors.grey, fontSize: 13),
-              ),
-              const SizedBox(height: 20),
-              _buildDialogField("Email Terdaftar", emailController, Icons.email_outlined),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("BATAL", style: TextStyle(color: Colors.grey)),
-            ),
-            ElevatedButton(
-              onPressed: isSubmitting ? null : () async {
-                if (emailController.text.isEmpty) return;
-                setDialogState(() => isSubmitting = true);
-                try {
-                  final dio = Dio(BaseOptions(baseUrl: ApiConstants.baseUrl));
-                  await dio.post('/auth/reset-password', data: {
-                    'email': emailController.text,
-                  });
-                  if (mounted) {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Permintaan berhasil dikirim ke admin"), backgroundColor: Colors.green),
-                    );
-                  }
-                } catch (e) {
-                  setDialogState(() => isSubmitting = false);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Gagal mengirim permintaan: $e"), backgroundColor: Colors.red),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryGold, foregroundColor: Colors.black),
-              child: isSubmitting 
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
-                : const Text("KIRIM"),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDialogField(String label, TextEditingController controller, IconData icon) {
-    return TextField(
-      controller: controller,
-      style: const TextStyle(color: Colors.white, fontSize: 14),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.grey),
-        prefixIcon: Icon(icon, color: AppTheme.primaryGold, size: 20),
-        filled: true,
-        fillColor: Colors.black12,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white10)),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white10)),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -162,12 +86,12 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 48),
-                _buildLabel("USERNAME"),
+                _buildLabel("EMAIL"),
                 const SizedBox(height: 12),
                 _buildTextField(
-                  controller: _usernameController,
-                  hint: "Masukkan Username",
-                  icon: Icons.alternate_email,
+                  controller: _usernameController, // Tetap pakai controller lama biar ga error ref, tapi hint ganti
+                  hint: "Masukkan Email",
+                  icon: Icons.email_outlined,
                 ),
                 const SizedBox(height: 24),
                 _buildLabel("KATA SANDI"),
@@ -182,7 +106,12 @@ class _LoginPageState extends State<LoginPage> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: _showForgotPasswordDialog,
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ForgotPasswordPage()),
+                      );
+                    },
                     child: const Text(
                       "LUPA KATA SANDI ?",
                       style: TextStyle(color: AppTheme.accentRed, fontSize: 11, fontWeight: FontWeight.bold),

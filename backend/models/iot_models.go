@@ -33,6 +33,9 @@ type SensorData struct {
 	Suhu         float64   `json:"suhu"`
 	Kelembaban   float64   `json:"kelembaban"`
 	SoilMoisture int       `json:"soil_moisture"`
+	RelayFan     bool      `json:"relay_fan"`
+	RelayPump    bool      `json:"relay_pump"`
+	Health       string    `json:"health"`
 	Timestamp    time.Time `gorm:"autoCreateTime" json:"timestamp"`
 }
 
@@ -54,4 +57,12 @@ type DeviceControlLog struct {
 	UserID    uint      `json:"user_id"`
 	Action    string    `json:"action"` // ON, OFF
 	Timestamp time.Time `json:"timestamp"`
+}
+
+type SystemSetting struct {
+	ID              uint    `gorm:"primaryKey" json:"id"`
+	Mode            string  `gorm:"default:manual" json:"mode"` // manual, auto
+	TargetTemp      float64 `gorm:"default:30.0" json:"target_temp"`
+	TargetMoisture  int     `gorm:"default:700" json:"target_moisture"`
+	UpdatedAt       time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }

@@ -21,7 +21,9 @@ type PasswordResetRequest struct {
 	RequestID uint      `gorm:"primaryKey;column:request_id" json:"request_id"`
 	Username  string    `json:"username"`
 	Email     string    `json:"email"`
-	Status    string    `gorm:"default:pending" json:"status"` // pending, approved, rejected
+	Token     string    `json:"token"`
+	ExpiresAt time.Time `json:"expires_at"`
+	IsUsed    bool      `gorm:"default:false" json:"is_used"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }

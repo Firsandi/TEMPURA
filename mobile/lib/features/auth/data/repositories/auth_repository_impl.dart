@@ -11,11 +11,11 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<Failure, User>> login({
-    required String username,
+    required String email,
     required String password,
   }) async {
     try {
-      final user = await remoteDataSource.login(username, password);
+      final user = await remoteDataSource.login(email, password);
       return Right(user);
     } catch (e) {
       return Left(AuthFailure(e.toString()));
@@ -31,5 +31,30 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, void>> logout() async {
     return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, String>> forgotPassword(String email) async {
+    try {
+      final message = await remoteDataSource.forgotPassword(email);
+      return Right(message);
+    } catch (e) {
+      return Left(AuthFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> resetPassword({
+    required String email,
+    required String token,
+    required String newPassword,
+  }) async {
+    try {
+      final message =
+          await remoteDataSource.resetPassword(email, token, newPassword);
+      return Right(message);
+    } catch (e) {
+      return Left(AuthFailure(e.toString()));
+    }
   }
 }

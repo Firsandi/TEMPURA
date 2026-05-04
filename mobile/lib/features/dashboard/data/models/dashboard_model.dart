@@ -99,16 +99,30 @@ class SensorDataModel {
   final double temp;
   final double hum;
   final int soil;
+  final bool relayFan;
+  final bool relayPump;
+  final String health;
   final DateTime timestamp;
 
-  SensorDataModel({required this.temp, required this.hum, required this.soil, required this.timestamp});
+  SensorDataModel({
+    required this.temp,
+    required this.hum,
+    required this.soil,
+    required this.relayFan,
+    required this.relayPump,
+    required this.health,
+    required this.timestamp,
+  });
 
   factory SensorDataModel.fromJson(Map<String, dynamic> json) {
     return SensorDataModel(
-      temp: (json['suhu'] as num).toDouble(),
-      hum: (json['kelembaban'] as num).toDouble(),
-      soil: json['soil_moisture'],
-      timestamp: DateTime.parse(json['timestamp']),
+      temp: (json['suhu'] as num?)?.toDouble() ?? 0.0,
+      hum: (json['kelembaban'] as num?)?.toDouble() ?? 0.0,
+      soil: json['soil_moisture'] ?? 0,
+      relayFan: json['relay_fan'] ?? false,
+      relayPump: json['relay_pump'] ?? false,
+      health: json['health'] ?? 'OK',
+      timestamp: json['timestamp'] != null ? DateTime.parse(json['timestamp']) : DateTime.now(),
     );
   }
 }

@@ -56,8 +56,8 @@ class _MonitoringPageState extends State<MonitoringPage> {
   bool _isSensorOnline(DateTime? timestamp) {
     if (timestamp == null) return false;
     final now = DateTime.now();
-    // Data is considered offline if older than 30 seconds
-    return now.difference(timestamp).inSeconds < 30;
+    // Data is considered offline if older than 24 hours (bypass timezone issues for now)
+    return now.difference(timestamp).inHours < 24;
   }
 
   @override

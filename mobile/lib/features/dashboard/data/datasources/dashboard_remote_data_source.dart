@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/dashboard_model.dart';
 
 class DashboardRemoteDataSource {
@@ -23,14 +25,43 @@ class DashboardRemoteDataSource {
     }
   }
 
-  Future<void> controlDevice(int deviceId, String action) async {
+  Future<void> controlDevice(String device, String action) async {
     try {
       await dio.post('/dashboard/control', data: {
-        'device_id': deviceId,
+        'device': device,
         'action': action,
       });
     } catch (e) {
       throw 'Gagal mengontrol perangkat: $e';
+    }
+  }
+
+  Future<Map<String, dynamic>> getSettings() async {
+    try {
+      final response = await dio.get('/dashboard/settings');
+      return response.data['data'];
+    } catch (e) {
+      throw 'Gagal mengambil pengaturan: $e';
+    }
+  }
+
+  Future<void> updateSettings(Map<String, dynamic> settings) async {
+    try {
+      await dio.put('/dashboard/settings', data: settings);
+    } catch (e) {
+      throw 'Gagal memperbarui pengaturan: $e';
+    }
+  }
+
+  Future<void> changePassword(String newPassword) async {
+    try {
+      final supabase = Supabase.instance.client;
+      await supabase.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+    } catch (e) {
+      debugPrint('Supabase Change Password Error: $e');
+      throw 'Gagal: ${e.toString().replaceAll('AuthException: ', '')}';
     }
   }
 }
