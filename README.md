@@ -61,8 +61,11 @@ flutter run
 - [ ] Laporan Statistik Mingguan (Next Phase)
 
 ## 👤 Kontributor
-- **Antigravity AI** - Lead Developer & Architect
-- **User** - Product Owner & Tester
+- R. Jodie Ferdyanto Susilo    (PROJECT MANAGER)
+- Khayru Nabiel Bahtiar        (UIUX DESAINER)
+- Firsandi Andraw Febriansyah  (PROGRAMMER IoT & TEMPURA MOBILE APP)
+- Dimas Rofi’ Purnomo          (SYSTEM ANALYST)
+ 
 
 ---
 *Dibuat dengan ❤️ untuk kemajuan industri tempe Indonesia.*
