@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+	"strconv"
 	"tempura-backend/config"
 	"tempura-backend/models"
 
@@ -59,11 +60,21 @@ func StartBatch(c *gin.Context) {
 	var lastRun int
 	config.DB.Model(&models.ProductionHistory{}).Where("batch_id = ?", batch.BatchID).Select("MAX(run_number)").Row().Scan(&lastRun)
 	
+	userIDStr := c.Query("user_id")
+	var startedBy *uint
+	if userIDStr != "" {
+		if idInt, err := strconv.Atoi(userIDStr); err == nil {
+			uid := uint(idInt)
+			startedBy = &uid
+		}
+	}
+
 	history := models.ProductionHistory{
 		BatchID:   batch.BatchID,
 		RunNumber: lastRun + 1,
 		StartTime: time.Now(),
 		Status:    "Berjalan", // Temporary status
+		StartedBy: startedBy,
 	}
 	config.DB.Create(&history)
 
@@ -142,7 +153,16 @@ func DeleteBatch(c *gin.Context) {
 func StopBatch(c *gin.Context) {
 	id := c.Param("id")
 	
-	if err := CompleteBatch(id, "Fermentasi Dihentikan (dihentikan paksa)"); err != nil {
+	userIDStr := c.Query("user_id")
+	var stoppedBy *uint
+	if userIDStr != "" {
+		if idInt, err := strconv.Atoi(userIDStr); err == nil {
+			uid := uint(idInt)
+			stoppedBy = &uid
+		}
+	}
+
+	if err := CompleteBatch(id, "Fermentasi Dihentikan (dihentikan paksa)", stoppedBy); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -154,7 +174,7 @@ func StopBatch(c *gin.Context) {
 }
 
 // CompleteBatch is a helper to finalize a batch session
-func CompleteBatch(batchID interface{}, status string) error {
+func CompleteBatch(batchID interface{}, status string, stoppedBy *uint) error {
 	now := time.Now()
 	
 	// 1. Update Batch status
@@ -163,12 +183,17 @@ func CompleteBatch(batchID interface{}, status string) error {
 	}
 
 	// 2. Update Production History
+	updates := map[string]interface{}{
+		"end_time": &now,
+		"status":   status,
+	}
+	if stoppedBy != nil {
+		updates["stopped_by"] = stoppedBy
+	}
+
 	if err := config.DB.Model(&models.ProductionHistory{}).
 		Where("batch_id = ? AND end_time IS NULL", batchID).
-		Updates(map[string]interface{}{
-			"end_time": &now,
-			"status":   status,
-		}).Error; err != nil {
+		Updates(updates).Error; err != nil {
 		return fmt.Errorf("gagal update history: %v", err)
 	}
 
@@ -187,11 +212,37 @@ func GetBatchDetail(c *gin.Context) {
 	var runs []models.ProductionHistory
 	config.DB.Where("batch_id = ?", batch.BatchID).Order("run_number desc").Find(&runs)
 
+	type RunWithUser struct {
+		models.ProductionHistory
+		StartedByName string `json:"started_by_name"`
+		StoppedByName string `json:"stopped_by_name"`
+	}
+
+	var runsWithUser []RunWithUser
+	for _, run := range runs {
+		var rwu RunWithUser
+		rwu.ProductionHistory = run
+
+		if run.StartedBy != nil {
+			var u models.User
+			if config.DB.First(&u, *run.StartedBy).Error == nil {
+				rwu.StartedByName = u.Fullname
+			}
+		}
+		if run.StoppedBy != nil {
+			var u models.User
+			if config.DB.First(&u, *run.StoppedBy).Error == nil {
+				rwu.StoppedByName = u.Fullname
+			}
+		}
+		runsWithUser = append(runsWithUser, rwu)
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"status": "success",
 		"data": gin.H{
 			"batch":           batch,
-			"production_runs": runs,
+			"production_runs": runsWithUser,
 		},
 	})
 }

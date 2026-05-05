@@ -39,17 +39,17 @@ class BatchRemoteDataSource {
     }
   }
 
-  Future<void> stopBatch(int batchId) async {
+  Future<void> stopBatch(int batchId, String userId) async {
     try {
-      await dio.put('/batch/$batchId/stop');
+      await dio.put('/batch/$batchId/stop?user_id=$userId');
     } catch (e) {
       throw 'Gagal menghentikan batch: $e';
     }
   }
 
-  Future<void> startBatch(int batchId) async {
+  Future<void> startBatch(int batchId, String userId) async {
     try {
-      await dio.put('/batch/$batchId/start');
+      await dio.put('/batch/$batchId/start?user_id=$userId');
     } on DioException catch (e) {
       throw e.response?.data['error'] ?? 'Gagal menjalankan batch';
     } catch (e) {

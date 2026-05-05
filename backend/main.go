@@ -18,10 +18,10 @@ func main() {
 	config.InitMQTT()
 	services.StartMQTTSubscription()
 
-	// 2. Setup Router
+	// 3. Setup Router
 	r := gin.Default()
 
-	// 2.1 Allow CORS
+	// 4. Allow CORS
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
@@ -30,7 +30,7 @@ func main() {
 		AllowCredentials: true,
 	}))
 
-	// 3. Routes
+	// 5. Routes
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "pong",
@@ -43,6 +43,7 @@ func main() {
 		auth.POST("/forgot-password", handlers.RequestPasswordReset)
 		auth.POST("/reset-password", handlers.ResetPassword)
 		auth.POST("/change-password", handlers.ChangePassword)
+		auth.PUT("/update-profile", handlers.UpdateProfile)
 	}
 
 	batchGroup := r.Group("/batch")
@@ -64,7 +65,17 @@ func main() {
 		dashboard.PUT("/settings", handlers.UpdateSettings)
 	}
 
-	// 4. Run Server
+	userGroup := r.Group("/users")
+	{
+		userGroup.GET("", handlers.GetEmployees)
+		userGroup.POST("", handlers.CreateEmployee)
+		userGroup.PUT("/:id", handlers.UpdateEmployee)
+		userGroup.DELETE("/:id", handlers.DeleteEmployee)
+	}
+
+	// 6. Run Server
 	log.Println("Server running on port 8080")
-	r.Run(":8080")
+	if err := r.Run(":8080"); err != nil {
+		log.Fatalf("Gagal menjalankan server: %v", err)
+	}
 }

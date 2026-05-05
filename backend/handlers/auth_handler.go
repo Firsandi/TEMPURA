@@ -20,8 +20,8 @@ func Login(c *gin.Context) {
 	}
 
 	var user models.User
-	// Cari user berdasarkan username
-	result := config.DB.Where("username = ? AND is_deleted = false", req.Username).First(&user)
+	// Cari user berdasarkan email
+	result := config.DB.Where("email = ? AND is_deleted = false", req.Email).First(&user)
 	
 	if result.Error != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -31,8 +31,8 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// Cek password (Idealnya gunakan bcrypt.CompareHashAndPassword)
-	if user.Password != req.Password {
+	// Cek password menggunakan bcrypt
+	if !user.CheckPassword(req.Password) {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"status":  "error",
 			"message": "Kata sandi salah",
@@ -70,7 +70,6 @@ func RequestPasswordReset(c *gin.Context) {
 
 	// Create request
 	request := models.PasswordResetRequest{
-		Username:  user.Username,
 		Email:     input.Email,
 		Token:     token,
 		ExpiresAt: expiresAt,
@@ -120,9 +119,15 @@ func ResetPassword(c *gin.Context) {
 		return
 	}
 
-	// Update User Password
-	if err := config.DB.Model(&models.User{}).Where("username = ?", request.Username).
-		Update("password", input.NewPassword).Error; err != nil {
+	// Update User Password with Hashing
+	var user models.User
+	if err := config.DB.Where("email = ?", request.Email).First(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "User tidak ditemukan"})
+		return
+	}
+	
+	user.SetPassword(input.NewPassword)
+	if err := config.DB.Save(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memperbarui kata sandi"})
 		return
 	}
@@ -168,12 +173,13 @@ func ChangePassword(c *gin.Context) {
 		return
 	}
 
-	if user.Password != input.OldPassword {
+	if !user.CheckPassword(input.OldPassword) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Kata sandi lama salah"})
 		return
 	}
 
-	if err := config.DB.Model(&user).Update("password", input.NewPassword).Error; err != nil {
+	user.SetPassword(input.NewPassword)
+	if err := config.DB.Save(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memperbarui kata sandi"})
 		return
 	}
@@ -184,3 +190,53 @@ func ChangePassword(c *gin.Context) {
 	})
 }
 
+func UpdateProfile(c *gin.Context) {
+	var input struct {
+		UserID   uint   `json:"user_id" binding:"required"`
+		Fullname string `json:"full_name"`
+		Email    string `json:"email"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var user models.User
+	if err := config.DB.First(&user, input.UserID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User tidak ditemukan"})
+		return
+	}
+
+	// Check email conflict
+	if input.Email != "" && input.Email != user.Email {
+		var checkUser models.User
+		if err := config.DB.Where("email = ? AND user_id != ?", input.Email, input.UserID).First(&checkUser).Error; err == nil {
+			c.JSON(http.StatusConflict, gin.H{"error": "Email sudah digunakan oleh user lain"})
+			return
+		}
+	}
+
+	updates := map[string]interface{}{}
+	if input.Fullname != "" {
+		updates["fullname"] = input.Fullname
+	}
+	if input.Email != "" {
+		updates["email"] = input.Email
+	}
+	updates["updated_at"] = time.Now()
+
+	if err := config.DB.Model(&user).Updates(updates).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memperbarui profil"})
+		return
+	}
+
+	// Reload user for response
+	config.DB.First(&user, input.UserID)
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Profil berhasil diperbarui",
+		"data":    &user,
+	})
+}

@@ -5,11 +5,13 @@ import '../../../../core/constants/api_constants.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/datasources/batch_remote_data_source.dart';
 import '../../data/models/dashboard_model.dart';
+import '../../../auth/domain/entities/user.dart';
 import 'edit_batch_page.dart';
 
 class BatchDetailPage extends StatefulWidget {
   final BatchModel batch;
-  const BatchDetailPage({super.key, required this.batch});
+  final User user;
+  const BatchDetailPage({super.key, required this.batch, required this.user});
 
   @override
   State<BatchDetailPage> createState() => _BatchDetailPageState();
@@ -62,7 +64,7 @@ class _BatchDetailPageState extends State<BatchDetailPage> {
 
     setState(() => _isLoading = true);
     try {
-      await _dataSource.startBatch(_currentBatch.id);
+      await _dataSource.startBatch(_currentBatch.id, widget.user.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Batch berhasil dijalankan"), backgroundColor: Colors.green),
@@ -130,7 +132,7 @@ class _BatchDetailPageState extends State<BatchDetailPage> {
 
     setState(() => _isLoading = true);
     try {
-      await _dataSource.stopBatch(_currentBatch.id);
+      await _dataSource.stopBatch(_currentBatch.id, widget.user.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Batch berhasil dihentikan paksa"), backgroundColor: Colors.orange),

@@ -55,7 +55,6 @@ func handleSensorData(client mqtt.Client, msg mqtt.Message) {
 
 	// 2. Save to database (Always save, even without batch)
 	sensorData := models.SensorData{
-		BatchID:      batchID,
 		HistoryID:    historyID,
 		Suhu:         payload.Temp,
 		Kelembaban:   payload.Hum,

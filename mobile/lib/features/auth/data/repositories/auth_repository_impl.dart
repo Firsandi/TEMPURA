@@ -3,11 +3,16 @@ import '../../../../core/error/failures.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_data_source.dart';
+import '../datasources/auth_local_data_source.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource remoteDataSource;
+  final AuthLocalDataSource localDataSource;
 
-  AuthRepositoryImpl({required this.remoteDataSource});
+  AuthRepositoryImpl({
+    required this.remoteDataSource,
+    required this.localDataSource,
+  });
 
   @override
   Future<Either<Failure, User>> login({
@@ -16,6 +21,7 @@ class AuthRepositoryImpl implements AuthRepository {
   }) async {
     try {
       final user = await remoteDataSource.login(email, password);
+      await localDataSource.cacheUser(user);
       return Right(user);
     } catch (e) {
       return Left(AuthFailure(e.toString()));
@@ -24,13 +30,22 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<Failure, User?>> getCurrentUser() async {
-    // Implement local storage check later
-    return const Right(null);
+    try {
+      final user = await localDataSource.getCachedUser();
+      return Right(user);
+    } catch (e) {
+      return Left(AuthFailure(e.toString()));
+    }
   }
 
   @override
   Future<Either<Failure, void>> logout() async {
-    return const Right(null);
+    try {
+      await localDataSource.clearCache();
+      return const Right(null);
+    } catch (e) {
+      return Left(AuthFailure(e.toString()));
+    }
   }
 
   @override

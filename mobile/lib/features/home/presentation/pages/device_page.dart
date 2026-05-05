@@ -158,7 +158,7 @@ class _DevicePageState extends State<DevicePage> {
   bool _isOnline() {
     if (_data?.latestSensor == null) return false;
     final now = DateTime.now();
-    return now.difference(_data!.latestSensor!.timestamp).inHours < 24;
+    return now.difference(_data!.latestSensor!.timestamp).inSeconds < 30;
   }
 
   List<DeviceEntity> _getDevices() {

@@ -25,26 +25,39 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   }
 
   Future<void> _requestToken() async {
-    if (_emailController.text.isEmpty) {
-      _showSnackbar("Harap masukkan email Anda", true);
+    final email = _emailController.text.trim();
+
+    if (email.isEmpty) {
+      _showSnackbar("Email tidak boleh kosong", true);
+      return;
+    }
+
+    // Validasi format email
+    final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+    if (!emailRegex.hasMatch(email)) {
+      _showSnackbar("Format email tidak valid", true);
       return;
     }
 
     setState(() => _isLoading = true);
-    final result = await _authRepository.forgotPassword(_emailController.text);
+    final result = await _authRepository.forgotPassword(email);
     
     setState(() => _isLoading = false);
     
     result.fold(
       (failure) => _showSnackbar(failure.message, true),
-      (message) {
-        _showSnackbar(message, false);
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => VerifyOTPPage(email: _emailController.text),
-          ),
-        );
+      (message) async {
+        _showSnackbar("Kode OTP berhasil dikirim ke $email", false);
+        // Delay agar user sempat membaca pesan sebelum pindah halaman
+        await Future.delayed(const Duration(milliseconds: 1200));
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => VerifyOTPPage(email: email),
+            ),
+          );
+        }
       },
     );
   }
@@ -52,9 +65,21 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   void _showSnackbar(String message, bool isError) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? AppTheme.accentRed : Colors.green,
+        content: Row(
+          children: [
+            Icon(
+              isError ? Icons.error_outline : Icons.check_circle_outline,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Text(message, style: const TextStyle(color: Colors.white))),
+          ],
+        ),
+        backgroundColor: isError ? AppTheme.accentRed : Colors.green.shade700,
         behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
       ),
     );
   }
@@ -67,47 +92,126 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppTheme.primaryGold),
+          icon: const Icon(Icons.arrow_back_ios, color: AppTheme.primaryGold),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 32.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 20),
-              const Text(
-                "Lupa\nKata Sandi",
-                style: TextStyle(
-                  color: AppTheme.primaryGold,
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                  height: 1.1,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 20),
+                      const Text(
+                        "Lupa\nKata Sandi",
+                        style: TextStyle(
+                          color: AppTheme.primaryGold,
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                          height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        "Masukkan email terdaftar Anda. Kami akan mengirimkan kode verifikasi untuk mereset password.",
+                        style: TextStyle(color: Colors.white54, fontSize: 14, height: 1.5),
+                      ),
+                      const SizedBox(height: 48),
+                      
+                      _buildLabel("EMAIL TERDAFTAR"),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+                        decoration: InputDecoration(
+                          hintText: "contoh@email.com",
+                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.25)),
+                          prefixIcon: const Icon(Icons.email_outlined, color: AppTheme.primaryGold, size: 22),
+                          fillColor: const Color(0xFF1A1A1A),
+                          filled: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppTheme.primaryGold, width: 1),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 48),
+                      
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _requestToken,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryGold,
+                            foregroundColor: Colors.black,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 5,
+                            shadowColor: AppTheme.primaryGold.withOpacity(0.4),
+                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: const [
+                                    Text("KIRIM KODE VERIFIKASI",
+                                        style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
+                                    SizedBox(width: 8),
+                                    Icon(Icons.send_rounded, size: 18),
+                                  ],
+                                ),
+                        ),
+                      ),
+                      
+                      const Spacer(),
+                      
+                      // Back to login
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 32),
+                        child: Center(
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: RichText(
+                              text: const TextSpan(
+                                text: "Ingat kata sandi? ",
+                                style: TextStyle(color: Colors.white38, fontSize: 13),
+                                children: [
+                                  TextSpan(
+                                    text: "Masuk",
+                                    style: TextStyle(
+                                      color: AppTheme.primaryGold,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 16),
-              const Text(
-                "Masukkan email Anda untuk menerima kode verifikasi reset password.",
-                style: TextStyle(color: Colors.white54, fontSize: 14),
-              ),
-              const SizedBox(height: 60),
-              
-              _buildLabel("EMAIL TERDAFTAR"),
-              const SizedBox(height: 12),
-              _buildTextField(
-                controller: _emailController,
-                hint: "contoh@email.com",
-                icon: Icons.email_outlined,
-              ),
-              const SizedBox(height: 60),
-              _buildButton(
-                onPressed: _requestToken,
-                text: "KIRIM KODE VERIFIKASI",
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -122,55 +226,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         fontWeight: FontWeight.bold,
         letterSpacing: 1,
       ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: TextField(
-        controller: controller,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: const TextStyle(color: Colors.white24),
-          prefixIcon: Icon(icon, color: AppTheme.primaryGold, size: 22),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildButton({required VoidCallback? onPressed, required String text}) {
-    return ElevatedButton(
-      onPressed: _isLoading ? null : onPressed,
-      style: ElevatedButton.styleFrom(
-        minimumSize: const Size(double.infinity, 56),
-        backgroundColor: AppTheme.primaryGold,
-        foregroundColor: Colors.black,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 5,
-        shadowColor: AppTheme.primaryGold.withOpacity(0.4),
-      ),
-      child: _isLoading
-          ? const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
-            )
-          : Text(
-              text,
-              style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
-            ),
     );
   }
 }

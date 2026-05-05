@@ -5,11 +5,13 @@ import '../../../../core/constants/api_constants.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/datasources/batch_remote_data_source.dart';
 import '../../data/models/dashboard_model.dart';
+import '../../../auth/domain/entities/user.dart';
 import 'add_batch_page.dart';
 import 'batch_detail_page.dart';
 
 class BatchListPage extends StatefulWidget {
-  const BatchListPage({super.key});
+  final User user;
+  const BatchListPage({super.key, required this.user});
 
   @override
   State<BatchListPage> createState() => _BatchListPageState();
@@ -172,7 +174,7 @@ class _BatchListPageState extends State<BatchListPage> {
     final hours = duration.inHours % 24;
     return GestureDetector(
       onTap: () async {
-        final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => BatchDetailPage(batch: batch)));
+        final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => BatchDetailPage(batch: batch, user: widget.user)));
         if (result == true) _fetchBatches();
       },
       child: Container(
@@ -269,7 +271,7 @@ class _BatchListPageState extends State<BatchListPage> {
         children: [
           ListTile(
             onTap: () async {
-              final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => BatchDetailPage(batch: batch)));
+              final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => BatchDetailPage(batch: batch, user: widget.user)));
               if (result == true) _fetchBatches();
             },
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

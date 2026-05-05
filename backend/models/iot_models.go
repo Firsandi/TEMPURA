@@ -24,11 +24,12 @@ type ProductionHistory struct {
 	StartTime    time.Time  `json:"start_time"`
 	EndTime      *time.Time `json:"end_time"`
 	Status       string     `json:"status"` // Berhasil Fermentasi (normal), Fermentasi Dihentikan (dihentikan paksa)
+	StartedBy    *uint      `json:"started_by"`
+	StoppedBy    *uint      `json:"stopped_by"`
 }
 
 type SensorData struct {
-	SensorDataID uint      `gorm:"primaryKey;column:sensor_data_id" json:"sensor_data_id"`
-	BatchID      *uint     `json:"batch_id"`
+	SensorDataID uint      `gorm:"primaryKey;autoIncrement;column:sensor_data_id" json:"sensor_data_id"`
 	HistoryID    *uint     `json:"history_id"`
 	Suhu         float64   `json:"suhu"`
 	Kelembaban   float64   `json:"kelembaban"`

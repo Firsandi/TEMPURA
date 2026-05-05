@@ -1,5 +1,6 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:dio/dio.dart';
 import '../models/user_model.dart';
+import '../../../../core/constants/api_constants.dart';
 
 abstract class AuthRemoteDataSource {
   Future<UserModel> login(String email, String password);
@@ -8,38 +9,41 @@ abstract class AuthRemoteDataSource {
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
-  final SupabaseClient supabase = Supabase.instance.client;
+  final Dio dio;
+
+  AuthRemoteDataSourceImpl(this.dio);
 
   @override
   Future<UserModel> login(String email, String password) async {
     try {
-      final response = await supabase.auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
+      final response = await dio.post('/auth/login', data: {
+        'email': email,
+        'password': password,
+      });
 
-      if (response.user != null) {
-        return UserModel(
-          id: response.user!.id,
-          username: response.user!.email?.split('@')[0] ?? 'user',
-          fullName: response.user!.userMetadata?['full_name'] ?? 'User',
-          role: response.user!.userMetadata?['role']?.toString() ?? '2',
-        );
+      if (response.statusCode == 200 && response.data['status'] == 'success') {
+        return UserModel.fromJson(response.data['data']);
       } else {
-        throw 'Gagal login: User tidak ditemukan';
+        throw response.data['message'] ?? 'Gagal login';
       }
+    } on DioException catch (e) {
+      throw e.response?.data['message'] ?? e.response?.data['error'] ?? 'Gagal login';
     } catch (e) {
-      throw e.toString().replaceAll('AuthException: ', '');
+      throw e.toString();
     }
   }
 
   @override
   Future<String> forgotPassword(String email) async {
     try {
-      await supabase.auth.resetPasswordForEmail(email);
-      return 'Email pemulihan kata sandi telah dikirim.';
+      final response = await dio.post('/auth/forgot-password', data: {
+        'email': email,
+      });
+      return response.data['message'] ?? 'Email pemulihan kata sandi telah dikirim.';
+    } on DioException catch (e) {
+      throw e.response?.data['message'] ?? e.response?.data['error'] ?? 'Gagal mengirim email';
     } catch (e) {
-      throw e.toString().replaceAll('AuthException: ', '');
+      throw e.toString();
     }
   }
 
@@ -47,21 +51,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<String> resetPassword(
       String email, String token, String newPassword) async {
     try {
-      // Supabase uses verifyOTP for email reset tokens
-      await supabase.auth.verifyOTP(
-        email: email,
-        token: token,
-        type: OtpType.recovery,
-      );
-
-      // After verification, update the password
-      await supabase.auth.updateUser(
-        UserAttributes(password: newPassword),
-      );
-
-      return 'Kata sandi berhasil diperbarui.';
+      final response = await dio.post('/auth/reset-password', data: {
+        'email': email,
+        'token': token,
+        'new_password': newPassword,
+      });
+      return response.data['message'] ?? 'Kata sandi berhasil diperbarui.';
+    } on DioException catch (e) {
+      throw e.response?.data['message'] ?? e.response?.data['error'] ?? 'Gagal reset kata sandi';
     } catch (e) {
-      throw e.toString().replaceAll('AuthException: ', '');
+      throw e.toString();
     }
   }
 }

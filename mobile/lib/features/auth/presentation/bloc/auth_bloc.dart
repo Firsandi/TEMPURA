@@ -2,12 +2,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/usecases/login_usecase.dart';
+import '../../domain/repositories/auth_repository.dart';
 
 // Events
 abstract class AuthEvent extends Equatable {
   @override
   List<Object?> get props => [];
 }
+
+class AppStarted extends AuthEvent {}
 
 class LoginRequested extends AuthEvent {
   final String email;
@@ -18,6 +21,8 @@ class LoginRequested extends AuthEvent {
   @override
   List<Object?> get props => [email, password];
 }
+
+class LogoutRequested extends AuthEvent {}
 
 // States
 abstract class AuthState extends Equatable {
@@ -37,6 +42,8 @@ class AuthAuthenticated extends AuthState {
   List<Object?> get props => [user];
 }
 
+class AuthUnauthenticated extends AuthState {}
+
 class AuthError extends AuthState {
   final String message;
   AuthError(this.message);
@@ -48,8 +55,27 @@ class AuthError extends AuthState {
 // BLoC
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final LoginUseCase loginUseCase;
+  final AuthRepository authRepository;
 
-  AuthBloc({required this.loginUseCase}) : super(AuthInitial()) {
+  AuthBloc({
+    required this.loginUseCase,
+    required this.authRepository,
+  }) : super(AuthInitial()) {
+    
+    on<AppStarted>((event, emit) async {
+      final result = await authRepository.getCurrentUser();
+      result.fold(
+        (failure) => emit(AuthUnauthenticated()),
+        (user) {
+          if (user != null) {
+            emit(AuthAuthenticated(user));
+          } else {
+            emit(AuthUnauthenticated());
+          }
+        },
+      );
+    });
+
     on<LoginRequested>((event, emit) async {
       emit(AuthLoading());
       final result = await loginUseCase.execute(event.email, event.password);
@@ -57,6 +83,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         (failure) => emit(AuthError(failure.message)),
         (user) => emit(AuthAuthenticated(user)),
       );
+    });
+
+    on<LogoutRequested>((event, emit) async {
+      emit(AuthLoading());
+      await authRepository.logout();
+      emit(AuthUnauthenticated());
     });
   }
 }

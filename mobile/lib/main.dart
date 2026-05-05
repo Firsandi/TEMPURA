@@ -5,7 +5,6 @@ import 'core/constants/api_constants.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/pages/login_page.dart';
-import 'features/auth/domain/entities/user.dart';
 import 'features/dashboard/presentation/pages/main_page.dart';
 import 'injection_container.dart' as di;
 
@@ -26,29 +25,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final supabase = sb.Supabase.instance.client;
-    final session = supabase.auth.currentSession;
-    
-    Widget initialScreen;
-    if (session != null) {
-      // Jika sudah login, buat objek User dari data sesi
-      final user = session.user;
-      initialScreen = MainPage(
-        user: User(
-          id: user.id,
-          username: user.email?.split('@')[0] ?? 'user',
-          fullName: user.userMetadata?['full_name'] ?? 'User',
-          role: user.userMetadata?['role']?.toString() ?? '2', // Default Pegawai
-        ),
-      );
-    } else {
-      initialScreen = const LoginPage();
-    }
-
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) => di.sl<AuthBloc>(),
+          create: (_) => di.sl<AuthBloc>()..add(AppStarted()),
         ),
       ],
       child: MaterialApp(
@@ -57,7 +37,22 @@ class MyApp extends StatelessWidget {
         themeMode: ThemeMode.dark,
         theme: AppTheme.darkGoldTheme,
         darkTheme: AppTheme.darkGoldTheme,
-        home: initialScreen,
+        home: BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, state) {
+            if (state is AuthInitial || state is AuthLoading) {
+              return const Scaffold(
+                backgroundColor: Colors.black,
+                body: Center(
+                  child: CircularProgressIndicator(color: AppTheme.primaryGold),
+                ),
+              );
+            } else if (state is AuthAuthenticated) {
+              return MainPage(user: state.user);
+            } else {
+              return const LoginPage();
+            }
+          },
+        ),
       ),
     );
   }

@@ -13,13 +13,13 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -32,7 +32,19 @@ class _LoginPageState extends State<LoginPage> {
         listener: (context, state) {
           if (state is AuthError) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: AppTheme.accentRed),
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(state.message)),
+                  ],
+                ),
+                backgroundColor: AppTheme.accentRed,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                margin: const EdgeInsets.all(16),
+              ),
             );
           } else if (state is AuthAuthenticated) {
             Navigator.of(context).pushReplacement(
@@ -79,7 +91,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  "Masukkan username dan kata sandi yang terdaftar.",
+                  "Masukkan email dan kata sandi yang terdaftar.",
                   style: TextStyle(
                     color: Color(0xFF888888),
                     fontSize: 14,
@@ -89,7 +101,7 @@ class _LoginPageState extends State<LoginPage> {
                 _buildLabel("EMAIL"),
                 const SizedBox(height: 12),
                 _buildTextField(
-                  controller: _usernameController, // Tetap pakai controller lama biar ga error ref, tapi hint ganti
+                  controller: _emailController, 
                   hint: "Masukkan Email",
                   icon: Icons.email_outlined,
                 ),
@@ -125,12 +137,46 @@ class _LoginPageState extends State<LoginPage> {
                       onPressed: state is AuthLoading
                           ? null
                           : () {
+                              final email = _emailController.text.trim();
+                              final password = _passwordController.text;
+                              
+                              if (email.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(children: const [
+                                      Icon(Icons.email_outlined, color: Colors.white, size: 20),
+                                      SizedBox(width: 10),
+                                      Text("Email tidak boleh kosong"),
+                                    ]),
+                                    backgroundColor: AppTheme.accentRed,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    margin: const EdgeInsets.all(16),
+                                  ),
+                                );
+                                return;
+                              }
+                              
+                              if (password.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(children: const [
+                                      Icon(Icons.lock_outline, color: Colors.white, size: 20),
+                                      SizedBox(width: 10),
+                                      Text("Kata sandi tidak boleh kosong"),
+                                    ]),
+                                    backgroundColor: AppTheme.accentRed,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    margin: const EdgeInsets.all(16),
+                                  ),
+                                );
+                                return;
+                              }
+                              
                               context.read<AuthBloc>().add(
-                                    LoginRequested(
-                                      _usernameController.text,
-                                      _passwordController.text,
-                                    ),
-                                  );
+                                LoginRequested(email, password),
+                              );
                             },
                       child: state is AuthLoading
                           ? const SizedBox(

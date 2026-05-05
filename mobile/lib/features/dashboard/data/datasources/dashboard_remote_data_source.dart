@@ -53,15 +53,15 @@ class DashboardRemoteDataSource {
     }
   }
 
-  Future<void> changePassword(String newPassword) async {
+  Future<void> changePassword(int userId, String oldPassword, String newPassword) async {
     try {
-      final supabase = Supabase.instance.client;
-      await supabase.auth.updateUser(
-        UserAttributes(password: newPassword),
-      );
+      await dio.post('/auth/change-password', data: {
+        'user_id': userId,
+        'old_password': oldPassword,
+        'new_password': newPassword,
+      });
     } catch (e) {
-      debugPrint('Supabase Change Password Error: $e');
-      throw 'Gagal: ${e.toString().replaceAll('AuthException: ', '')}';
+      throw 'Gagal mengubah kata sandi: $e';
     }
   }
 }
